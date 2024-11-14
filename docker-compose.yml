@@ -1,0 +1,113 @@
+networks:
+  perf:
+    driver: bridge  # 定义 perf 网络
+services:
+  postgresql:
+    image: postgres:14.5
+    container_name: postgresql
+    #restart: always
+    environment:
+      TZ: Asia/Shanghai
+      LANG: en_US.UTF-8
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123456
+    volumes:
+      - "./docker/postgresql/data:/var/lib/postgresql/data"
+    ports:
+      - "5432:5432"
+    networks:
+      - perf  # 使用 perf 网络
+
+  frontend:
+    image: nginx:1.21.3
+    container_name: frontend
+    # 数据卷挂载路径设置,将本机目录映射到容器目录
+    volumes:
+      - "./docker/nginx/conf.d/:/etc/nginx/conf.d/"
+      - "./frontend/app/dist/:/usr/share/nginx/html/"
+      - "./frontend/app:/app"  # 将主机的代码目录映射到容器
+      #- "/app/node_modules"  # 避免 node_modules 被主机代码覆盖
+    #command: ["npm", "run", "serve"]  # 启动开发服务器
+    # 映射端口
+    ports:
+      - "8000:80"
+    networks:
+      - perf
+#  frontend:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    container_name: frontend
+#    ports:
+#      - "8000:80"
+#    networks:
+#      - perf
+#    volumes:
+#      - ./frontend/app:/app
+#      - ./docker/nginx/conf.d:/etc/nginx/conf.d
+
+  backend:
+    build:
+      context: ./mobileperf-master  # 指定后端服务目录
+      dockerfile: Dockerfile  # Flask 后端服务的 Dockerfile
+    volumes:
+      - ./mobileperf-master/mobileperf:/app/mobileperf  # 挂载后端服务目录
+    ports:
+      - "5500:5500"
+    environment:
+      - FLASK_ENV=development
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=123456
+      - POSTGRES_DB=postgres
+      - POSTGRES_HOST=postgresql  # 数据库服务名称
+    depends_on:
+      - postgresql
+    networks:
+      - perf  # 使用 perf 网络
+#  adb_service:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    container_name: adb_service
+#    volumes:
+#      - .:/app
+#      - ~/.android:/root/.android  # 挂载主机的 ADB key 文件
+#    restart: always
+#    privileged: true  # 允许容器访问 USB 设备
+#    network_mode: "host"  # 使用主机网络模式
+#    command: [ "adb", "-a", "nodaemon", "server" ]
+
+  adb_services:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: adb_services
+    volumes:
+      - .:/app
+    #restart: always
+    ports:
+      - "5100:5100"
+    privileged: true  # 允许容器访问 USB 设备
+    networks:
+      - perf  # 使用 Docker 网络
+    #network_mode: "host"  # 使用主机网络模式
+    command: [ "python3", "adb_services.py" ]
+
+#  devices_action:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    container_name: devices_action
+#    volumes:
+#      - .:/app
+#    #restart: always
+#    ports:
+#      - "5200:5200"
+#    privileged: true  # 允许容器访问 USB 设备
+#    networks:
+#      - perf  # 使用 Docker 网络
+##    logging:
+##      driver: "none"
+#    #network_mode: "host"  # 使用主机网络模式
+#    command: [ "python3", "devices_action.py" ]

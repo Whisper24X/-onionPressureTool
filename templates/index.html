@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <title>动态折线图</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+</head>
+<body>
+    <h1>动态折线图 - CPU利用率</h1>
+
+    <canvas id="dynamicChart" width="800" height="400"></canvas>
+
+    <script>
+        var ctx = document.getElementById('dynamicChart').getContext('2d');
+        var myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'CPU利用率',
+                    data: [],
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: '时间'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'CPU利用率'
+                        }
+                    }
+                }
+            }
+        });
+
+        var refreshIntervalId = null;
+        var lastLabelUpdateTime = null;
+
+        function updateChart(labels, cpuRates) {
+            myChart.data.labels = labels;
+            myChart.data.datasets[0].data = cpuRates;
+            myChart.update();
+        }
+
+        $(document).ready(function() {
+            $.ajax({
+                url: '/get_all_data',
+                success: function(data) {
+                    console.log(data);
+                    var labels = [];
+                    var cpuRates = [];
+
+                    for (var i = 0; i < data.length; i++) {
+                        var currentData = data[i];
+                        var label = moment(currentData['datetime'], 'YYYY-MM-DD HH-mm-ss').format('HH:mm:ss'); // 使用Moment.js格式化时间
+
+                        var cpuRate = currentData['device_cpu_rate%'];
+                        if (i % 10 === 0) {
+                            labels.push(label);
+                        } else {
+                            labels.push("");
+                        }
+                        cpuRates.push(cpuRate);
+                    }
+
+                    updateChart(labels, cpuRates);
+
+                    if (data.length > 0) {
+                        refreshIntervalId = setInterval(updateChartData, 3000);
+                    }
+                },
+                error: function(err) {
+                    console.log('Error fetching initial data:', err);
+                }
+            });
+        });
+
+
+
+    </script>
+</body>
+</html>
+
+

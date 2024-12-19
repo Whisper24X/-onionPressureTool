@@ -228,7 +228,9 @@ class TrafficCollecor(object):
         return NetDevInfo(out)
 
     def _cat_traffic_pid_dev(self,pid):
-        out = self.device.adb.run_shell_cmd("cat /proc/%d/net/dev"%pid)
+        if pid is None:
+            raise ValueError("PID cannot be None")
+        out = self.device.adb.run_shell_cmd("cat /proc/%d/net/dev" % pid)
         # traffic_file = os.path.join(RuntimeData.package_save_path, 'traffic.txt')
         # with open(traffic_file, "a+", encoding="utf-8") as writer:
         #     writer.write(TimeUtils.getCurrentTime() + " cat /proc/"+str(pid)+"/net/dev info:\n")

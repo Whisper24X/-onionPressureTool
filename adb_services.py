@@ -12,12 +12,11 @@ import psutil
 import re
 import platform
 from flask import Flask, request, jsonify
-import sys
-from flask import Flask, request, jsonify
 import subprocess
 import signal
 import sys
 import datetime
+import devices_action
 
 # 使用 datetime.now() 来获取当前时间
 current_time = datetime.datetime.now()
@@ -29,6 +28,7 @@ mobileperf_dir = os.path.join(base_dir, 'mobileperf-master')
 
 # 添加 mobileperf-master 目录到 sys.path
 sys.path.append(mobileperf_dir)
+# 检查路径和文件是否正确
 
 from mobileperf.android.DB_utils import DatabaseOperations
 
@@ -76,7 +76,7 @@ def get_connected_devices():
 
 
 def handle_device_setup(device_id, tcp_port):
-    # print(f"Setting up device: {device_id} on port: {tcp_port}")
+    #print(f"Setting up device: {device_id} on port: {tcp_port}")
     """连接成功后执行设备的设置和性能测试"""
     target_device_id = f'host.docker.internal:{tcp_port}'
     connect_command = f'adb connect {target_device_id}'
@@ -127,24 +127,21 @@ def handle_device_setup(device_id, tcp_port):
         device_name = "S30"
     elif target_device_id.startswith("Q20"):
         device_name = "Q20"
-    elif device_id.startswith("P30"):
-        device_name = "P30"
 
     try:
-        db_operations.devices_info_insert(device_id, device_name)
+        db_operations.devices_info_insert(target_device_id, device_name)
     except Exception as db_e:
         print(db_e)
         print("devices_info插入数据库失败！！")
 
     # 执行 fps_run.py 文件，并将设备 ID 作为参数传递
-    py_file = os.path.join(base_path, "mobileperf-master", "android", "fps_run.py")
+    py_file = os.path.join(base_path, "mobileperf-master", "mobileperf", "android", "fps_run.py")
     py_file = py_file.replace('\r', '')  # 移除路径中的回车符
-    thread_py = threading.Thread(target=run_command_in_directory,
-                                 args=(f"python {py_file} {target_device_id}", sh_directory))
-    # threads.append(thread_py)
+    thread_py = threading.Thread(target=run_command_in_directory, args=(f"python {py_file} {target_device_id}", sh_directory))
+    threads.append(thread_py)
     thread_py.start()
 
-    thread.join()  # 等待线程执行完毕
+
 
 
 @app.route('/api/report', methods=['POST'])
@@ -155,7 +152,9 @@ def report_connected():
     tcp_port = data.get('tcpPort')
     system_version = data.get('systemVersion')
     memory_info = data.get('memoryInGB')
+    package_list = data.get('packageList')
     # online_status = data.get('onlineStatus')
+    #print(package_list)
 
     if device_id and tcp_port:
         print(f"接收到设备: {device_id}，端口: {tcp_port}")
@@ -192,7 +191,8 @@ def report_connected():
                 'system_version': system_version,
                 'device_ram': memory_info,
                 'device_status': 1,
-                'tcp_port': tcp_port
+                'tcp_port': tcp_port,
+                'package_list' : package_list
             }
 
             # 实例化 DatabaseOperations 类
@@ -260,6 +260,7 @@ def report_disconnect():
     data = request.json
     device_id = data.get('deviceId')
     tcp_port = data.get('tcpPort')
+
     devices_status = 0
 
     # del connected_devices[device_id]
@@ -327,7 +328,8 @@ def start_monkey():
             logging.info(f"成功连接设备 {device_id}，端口: {tcp_port}")
             time.sleep(2)
 
-            handle_device_setup(device_id, tcp_port)
+            #handle_device_setup(device_id, tcp_port)
+            devices_action.handle_device_setup(device_id, tcp_port, "com.yangcong345.eye.protection")
 
             # 返回成功的响应
             return jsonify({"status": "success", "message": "设备开始执行monkey脚本"}), 200

@@ -9,13 +9,15 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-ENV PYTHONPATH="/app"
+
 
 # 复制 Flask 应用代码
 COPY mobileperf /app/mobileperf
 
 #ENV PYTHONPATH="/app/mobileperf-master:${PYTHONPATH}"
 
+
+ENV PYTHONPATH=/app
 
 # 暴露 Flask 服务端口
 EXPOSE 5500

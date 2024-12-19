@@ -61,6 +61,7 @@ services:
       - POSTGRES_PASSWORD=123456
       - POSTGRES_DB=postgres
       - POSTGRES_HOST=postgresql  # 数据库服务名称
+      - PYTHONPATH=/app  # 确保 Python 能找到 /app 目录
     depends_on:
       - postgresql
     networks:

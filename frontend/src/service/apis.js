@@ -5,6 +5,11 @@ export const deviceHistroyList = (params) => {
   return request5.get('/latest_ids', params)
 }
 
+/** 删除某个记录 */
+export const deleteHistroy = (data) => {
+  return request5.post('/delete_device_data', data)
+}
+
 /** 获取所有设备列表 */
 export const deviceList = () => {
   return request5.post('/get_devices_details', {})
@@ -53,4 +58,13 @@ export const getMemInfo = (data) => {
  */
 export const getFpsInfo = (data) => {
   return request5.post('/get_fps_info', data)
+}
+
+/** 获取所有报告列表 */
+export const getReportList = () => {
+  return request5.get('/get_all_tablet_report')
+}
+/** 获取某个报告 */
+export const getReportDetail = (data) => {
+  return request5.post('/get_tablet_report', data)
 }

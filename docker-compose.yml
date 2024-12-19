@@ -25,8 +25,8 @@ services:
     # 数据卷挂载路径设置,将本机目录映射到容器目录
     volumes:
       - "./docker/nginx/conf.d/:/etc/nginx/conf.d/"
-      - "./frontend/app/dist/:/usr/share/nginx/html/"
-      - "./frontend/app:/app"  # 将主机的代码目录映射到容器
+      - "./frontend/dist/:/usr/share/nginx/html/"
+      - "./frontend:/app"  # 将主机的代码目录映射到容器
       #- "/app/node_modules"  # 避免 node_modules 被主机代码覆盖
     #command: ["npm", "run", "serve"]  # 启动开发服务器
     # 映射端口
@@ -61,6 +61,7 @@ services:
       - POSTGRES_PASSWORD=123456
       - POSTGRES_DB=postgres
       - POSTGRES_HOST=postgresql  # 数据库服务名称
+      - PYTHONPATH=/app  # 确保 Python 能找到 /app 目录
     depends_on:
       - postgresql
     networks:

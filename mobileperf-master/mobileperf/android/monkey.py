@@ -68,7 +68,7 @@ class Monkey(object):
                           '--ignore-crashes --ignore-timeouts --ignore-security-exceptions ' \
                           '--kill-process-after-error --pct-appswitch 20 --pct-touch 40 ' \
                           '--pct-motion 10 --pct-trackball 0 --pct-anyevent 10 --pct-flip 0 --pct-pinchzoom 0 ' \
-                          '--throttle 1000 %s' % (package, str(timeout))
+                          '--throttle 500 %s' % (package, str(timeout))
         self._log_pipe = self.device.adb.run_shell_cmd(self.monkey_cmd, sync=False)
         self._monkey_thread = threading.Thread(target=self._monkey_thread_func, args=[RuntimeData.package_save_path])
         # self._monkey_thread.setDaemon(True)

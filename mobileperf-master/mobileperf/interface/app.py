@@ -121,7 +121,58 @@ def get_fps_info():
     else:
         return jsonify({"message": "未找到相关fps数据"}), 409
 
+@app.route('/get_all_tablet_report', methods=['GET'])
+def get_all_tablet_report():
 
+    all_tablet_report = db_operations.get_all_tablet_report()
+    if all_tablet_report:
+        return jsonify(all_tablet_report)
+    else:
+        return jsonify({"message": "未找到相关平板报告的数据"}), 409
+
+@app.route('/get_tablet_report', methods=['POST'])
+def get_tablet_report():
+    data = request.json
+    report_id = data.get('report_id')
+    sn = data.get('sn')
+
+    tablet_report = db_operations.get_fps_info(report_id, sn)
+    if tablet_report:
+        return jsonify(tablet_report)
+    else:
+        return jsonify({"message": "未找到相关指定平板报告的数据"}), 409
+
+@app.route('/delete_device_data', methods=['POST'])
+def delete_device_data():
+    data = request.json
+    sn = data.get('device_name')
+    ids = data.get('other_field')
+
+    delete_device_data = db_operations.delete_device_data(sn, ids)
+    if delete_device_data:
+        return jsonify(delete_device_data)
+    else:
+        return jsonify({"message": "未删除相关设备历史数据"}), 409
+
+@app.route('/insert_tablet_report', methods=['POST'])
+def insert_tablet_report():
+    try:
+        data = request.get_json()  # 获取 POST 请求的 JSON 数据
+
+        sn = data.get('sn')
+        details = data.get('details')
+
+        insert_tablet_report = db_operations.insert_tablet_report(sn, details)
+        print(insert_tablet_report)
+        return jsonify({"message": "insert_tablet_report.Report inserted successfully"}), 200
+    except Exception as e:
+        return jsonify({"insert_tablet_report error": str(e)}), 500
+
+
+    # if insert_tablet_report:
+    #     return jsonify(insert_tablet_report)
+    # else:
+    #     return jsonify({"message": "平板报告未插入成功"}), 409
 
 if __name__ == '__main__':
     #get_devices()

@@ -3,8 +3,8 @@ from datetime import datetime
 import csv
 import os
 import configparser
-from mobileperf.android.DB_utils import DatabaseOperations
-from mobileperf.common.log import logger
+from DB_utils import DatabaseOperations
+# from mobileperf.common.log import logger
 
 class FpsListenserImpl(IFpsListener):
     def __init__(self):
@@ -92,4 +92,4 @@ class FpsListenserImpl(IFpsListener):
             db_operations.insert_fpsinfo(fps_data)
 
         except Exception as db_e:
-            logger.error(f"Failed to insert FPS data into database: {db_e}")
+            print(f"Failed to insert FPS data into database: {db_e}")

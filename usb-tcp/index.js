@@ -49,12 +49,21 @@ async function handleNewDevice(device) {
 //    console.log(`- 在线状态: ${onlineStatus}`);
 
     console.log(`设备 ${device.id} 已映射到 TCP 端口: ${tcpPort}。`);
+    // 获取设备上安装的包名列表
+    const packageList = await client.shell(device.id, 'pm list packages')
+      .then(adb.util.readAll)
+      .then(output => output.toString().split('\n'))
+      .filter(pkg => pkg.startsWith('package:com.yangcong345'));
 
-    const reportData = { deviceId: device.id, tcpPort , systemVersion, memoryInGB, onlineStatus};
+    //console.log(`设备 ${device.id} 上安装的 com.yangcong345 相关包名:`);
+    packageList.forEach(pkg => console.log(pkg));
+
+
+    const reportData = { deviceId: device.id, tcpPort , systemVersion, memoryInGB, onlineStatus, packageList};
     connectedDevices[device.id] = { ...reportData, server };
 
     await axios.post(REPORT_URL, reportData);
-    console.log(`成功上报设备 ${device.id} 和端口 ${tcpPort} 和系统版本号 ${systemVersion} 和运行内存 ${memoryInGB} 和 在线状态 ${onlineStatus}`);
+    console.log(`成功上报设备 ${device.id} 和端口 ${tcpPort} 和系统版本号 ${systemVersion} 和运行内存 ${memoryInGB} 和 在线状态 ${onlineStatus} 和设备洋葱包名列表：${packageList}`);
 
   } catch (err) {
     console.error(`处理设备 ${device.id} 时发生错误: ${err.message}`);

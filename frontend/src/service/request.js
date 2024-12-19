@@ -67,8 +67,8 @@ const generateAxiosInstance = (baseURL) => {
   return instance
 }
 
-const baseURL1 = 'http://192.168.11.102:5100'
-const baseURL5 = 'http://192.168.11.102:5500'
+const baseURL1 = 'http://127.0.0.1:5100'
+const baseURL5 = 'http://127.0.0.1:5500'
 
 export const request1 = generateAxiosInstance(baseURL1)
 export const request5 = generateAxiosInstance(baseURL5)

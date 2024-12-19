@@ -85,7 +85,7 @@ def run_command_in_directory(command, directory):
     #     process.terminate()
     #     process.wait()
 
-def handle_device_setup(device_id, tcp_port):
+def handle_device_setup(device_id, tcp_port, package_name):
     """连接成功后执行设备的设置和性能测试"""
     target_device_id = f'host.docker.internal:{tcp_port}'
     # target_device_id = device_id
@@ -110,6 +110,7 @@ def handle_device_setup(device_id, tcp_port):
     config_file_path = os.path.join(target_mobileperf_folder, "config.conf")
     with open(config_file_path, 'r') as file:
         lines = file.readlines()
+
     with open(config_file_path, 'w') as file:
         for line in lines:
             if line.startswith("serialnum="):
@@ -117,12 +118,14 @@ def handle_device_setup(device_id, tcp_port):
             elif line.startswith("monkey="):
                 file.write("# " + line)  # 注释掉原来的monkey命令
                 file.write("monkey=true\n")  # 写入修改后的monkey命令
+            elif line.startswith("package="):  # 修改 package 字段
+                file.write(f"package={package_name}\n")  # 使用传入的 package_name
             else:
                 file.write(line)
 
     sh_directory = os.path.join(base_path, "R", f"_{sanitize_device_id(target_device_id)}")
     command = f"python3 mobileperf/android/startup.py {tcp_port}"
-    print(command)
+    #print(command)
 
     # 创建并启动一个新的线程来执行命令并捕获输出
     thread = threading.Thread(target=run_command_in_directory, args=(command, sh_directory))
@@ -143,10 +146,18 @@ def handle_device_setup(device_id, tcp_port):
         print(db_e)
         print("devices_info插入数据库失败！！")
 
-    # 执行 fps_run.py 文件，并将设备 ID 作为参数传递
+    # 执行 设备帧率卡顿检测
     py_file = os.path.join(base_path, "mobileperf-master", "mobileperf", "android", "fps_run.py")
     py_file = py_file.replace('\r', '')  # 移除路径中的回车符
     thread_py = threading.Thread(target=run_command_in_directory, args=(f"python {py_file} {target_device_id}", sh_directory))
+    threads.append(thread_py)
+    thread_py.start()
+
+    # 执行 设备温度检测
+    py_file = os.path.join(base_path, "mobileperf-master", "mobileperf", "android", "temperature.py")
+    py_file = py_file.replace('\r', '')  # 移除路径中的回车符
+    thread_py = threading.Thread(target=run_command_in_directory,
+                                 args=(f"python {py_file} {target_device_id}", sh_directory))
     threads.append(thread_py)
     thread_py.start()
 

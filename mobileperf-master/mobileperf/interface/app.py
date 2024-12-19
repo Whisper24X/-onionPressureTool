@@ -19,25 +19,46 @@ def add_headers(response):
 @app.route('/get_devices_details', methods=['POST'])
 def get_devices_details():
     details = db_operations.get_devices_details()
+
+    # 假设数据库查询返回的是元组类型
     if details:
+        column_names = [
+            "id", "device_id", "model", "android_version", "device_ram",
+            "online_time", "device_status", "tcp_port", "package_list"
+        ]
+
         formatted_details = []
+
         for device in details:
-            formatted_device = {
-                "id": device[0],  # 假设 id 在元组的第一个位置
-                "device_id": device[1],  # device_id 在第二个位置
-                "model": device[2],  # model 在第三个位置
-                "android_version": device[3],  # android_version 在第四个位置
-                "device_ram": device[4],  # device_ram 在第五个位置
-                "online_time": device[5],  # online_time 在第六个位置
-                "device_status": device[6],  # device_status 在第七个位置
-                "tcp_port": device[7],  # tcp_port 在第八个位置
-                "package_list": device[8] # package_list 在第九个位置
-            }
+            formatted_device = dict(zip(column_names, device))  # 将元组与字段名映射
             formatted_details.append(formatted_device)
 
         return jsonify(formatted_details)
     else:
         return jsonify({"message": "未找到相关设备详情数据"}), 409
+
+
+# def get_devices_details():
+#     details = db_operations.get_devices_details()
+#     if details:
+#         formatted_details = []
+#         for device in details:
+#             formatted_device = {
+#                 "id": device[0],  # 假设 id 在元组的第一个位置
+#                 "device_id": device[1],  # device_id 在第二个位置
+#                 "model": device[2],  # model 在第三个位置
+#                 "android_version": device[3],  # android_version 在第四个位置
+#                 "device_ram": device[4],  # device_ram 在第五个位置
+#                 "online_time": device[5],  # online_time 在第六个位置
+#                 "device_status": device[6],  # device_status 在第七个位置
+#                 "tcp_port": device[7],  # tcp_port 在第八个位置
+#                 "package_list": device[8] # package_list 在第九个位置
+#             }
+#             formatted_details.append(formatted_device)
+#
+#         return jsonify(formatted_details)
+#     else:
+#         return jsonify({"message": "未找到相关设备详情数据"}), 409
 
 # 查看所有设备信息
 @app.route('/latest_ids', methods=['GET'])

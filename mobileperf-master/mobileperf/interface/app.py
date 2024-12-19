@@ -30,7 +30,8 @@ def get_devices_details():
                 "device_ram": device[4],  # device_ram 在第五个位置
                 "online_time": device[5],  # online_time 在第六个位置
                 "device_status": device[6],  # device_status 在第七个位置
-                "tcp_port": device[7]  # tcp_port 在第八个位置
+                "tcp_port": device[7],  # tcp_port 在第八个位置
+                "package_list": device[8] # package_list 在第九个位置
             }
             formatted_details.append(formatted_device)
 

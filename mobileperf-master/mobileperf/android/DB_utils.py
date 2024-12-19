@@ -478,7 +478,8 @@ class DatabaseOperations:
         try:
             cur.execute("SELECT * FROM devices_details;")
             devices = cur.fetchall()
-            print("查看所有设备详细信息！")
+
+            print("查看所有设备详细信息！"+devices)
             return devices
         except Exception as e:
             print(f"Failed to fetch devices: {e}")
@@ -734,3 +735,4 @@ class DatabaseOperations:
 # # 调用 CPU_info_insert 方法
 # d = db_operations.CPU_info_insert(cpu_data)
 # print(d)
+

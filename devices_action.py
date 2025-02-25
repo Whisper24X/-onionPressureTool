@@ -69,103 +69,46 @@ stop_events = {}  # 存储设备线程的停止事件
 device_threads = {}
 stop_event = {}  # 存储设备线程的停止事件
 def run_command_in_directory(command, directory):
-    """在指定目录执行命令并监听停止事件"""
-    subprocess.Popen(command, cwd=directory, shell=True)
-
-    # 循环监听 stop_event，直到收到停止信号
-    # while not stop_event.is_set():
-    #     retcode = process.poll()
-    #     if retcode is not None:  # 如果进程已经结束，退出循环
-    #         break
-    #     stop_event.wait(1)  # 每秒检查一次
-    #
-    # # 如果 stop_event 被设置，终止子进程
-    # if process.poll() is None:  # 如果进程还在运行
-    #     print(f"停止命令：{command}")
-    #     process.terminate()
-    #     process.wait()
-
-def handle_device_setup(device_id, tcp_port, package_name):
-    """连接成功后执行设备的设置和性能测试"""
-    target_device_id = f'host.docker.internal:{tcp_port}'
-    # target_device_id = device_id
-    connect_command = f'adb connect {target_device_id}'
-    subprocess.run(connect_command, shell=True, capture_output=True, text=True)
-    # 如果设备线程已存在且在运行，先停止旧线程
-    if target_device_id in device_threads and device_threads[target_device_id].is_alive():
-        print(f"正在停止设备 {target_device_id} 的旧线程")
-        stop_events[target_device_id].set()  # 设置停止事件
-        device_threads[target_device_id].join()  # 等待线程停止
-
-    base_path = os.path.dirname(os.path.abspath(__file__))
-    source_mobileperf_folder = os.path.join(base_path, "mobileperf-master")
-
-    # 创建目标 MobilePerf 文件夹路径
-    target_mobileperf_folder = os.path.join(base_path, "R", f"_{sanitize_device_id(target_device_id)}")
-    shutil.rmtree(target_mobileperf_folder, ignore_errors=True)  # 删除已存在的目标文件夹
-    shutil.copytree(source_mobileperf_folder, target_mobileperf_folder)  # 复制源文件夹到目标文件夹
-    print(f"MobilePerf文件夹 {source_mobileperf_folder} 已成功复制为 {target_mobileperf_folder}")
-
-    # 修改配置文件
-    config_file_path = os.path.join(target_mobileperf_folder, "config.conf")
-    with open(config_file_path, 'r') as file:
-        lines = file.readlines()
-
-    with open(config_file_path, 'w') as file:
-        for line in lines:
-            if line.startswith("serialnum="):
-                file.write(f"serialnum={target_device_id}\n")
-            elif line.startswith("monkey="):
-                file.write("# " + line)  # 注释掉原来的monkey命令
-                file.write("monkey=true\n")  # 写入修改后的monkey命令
-            elif line.startswith("package="):  # 修改 package 字段
-                file.write(f"package={package_name}\n")  # 使用传入的 package_name
-            else:
-                file.write(line)
-
-    sh_directory = os.path.join(base_path, "R", f"_{sanitize_device_id(target_device_id)}")
-    command = f"python3 mobileperf/android/startup.py {tcp_port}"
-    #print(command)
-
-    # 创建并启动一个新的线程来执行命令并捕获输出
-    thread = threading.Thread(target=run_command_in_directory, args=(command, sh_directory))
-    device_threads[target_device_id] = thread
-    thread.start()
-
-    # 插入设备信息到数据库
-    db_operations = DatabaseOperations()
-    device_name = "未知"
-    if target_device_id.startswith("S30"):
-        device_name = "S30"
-    elif target_device_id.startswith("Q20"):
-        device_name = "Q20"
-
+    """在指定目录执行命令"""
     try:
-        db_operations.devices_info_insert(target_device_id, device_name)
-    except Exception as db_e:
-        print(db_e)
-        print("devices_info插入数据库失败！！")
+        # 使用 subprocess.Popen 而不是直接运行
+        process = subprocess.Popen(
+            command,
+            cwd=directory,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True
+        )
+        return process
+    except Exception as e:
+        print(f"启动命令失败: {e}")
+        return None
+
+def handle_device_setup(device_id, tcp_port, package_name, system_version):
+    """连接成功后执行设备的设置和性能测试"""
+    target_device_id = device_id
+    processes = []  # 存储启动的进程
+    
+    # ... (其他设置代码保持不变) ...
 
     # 执行 设备帧率卡顿检测
     py_file = os.path.join(base_path, "mobileperf-master", "mobileperf", "android", "fps_run.py")
-    py_file = py_file.replace('\r', '')  # 移除路径中的回车符
-    thread_py = threading.Thread(target=run_command_in_directory, args=(f"python {py_file} {target_device_id}", sh_directory))
-    threads.append(thread_py)
-    thread_py.start()
+    print(f"FPS 脚本路径：{py_file}")
+    py_file = py_file.replace('\r', '')
+    fps_process = run_command_in_directory(f"python {py_file} {target_device_id}", sh_directory)
+    if fps_process:
+        processes.append(('fps', fps_process))
 
     # 执行 设备温度检测
-    py_file = os.path.join(base_path, "mobileperf-master", "mobileperf", "android", "temperature.py")
-    py_file = py_file.replace('\r', '')  # 移除路径中的回车符
-    thread_py = threading.Thread(target=run_command_in_directory,
-                                 args=(f"python {py_file} {target_device_id}", sh_directory))
-    threads.append(thread_py)
-    thread_py.start()
+    temp_file = os.path.join(base_path, "mobileperf-master", "mobileperf", "android", "temperature.py")
+    print(f"温度监控脚本路径：{temp_file}")
+    temp_file = temp_file.replace('\r', '')
+    temp_process = run_command_in_directory(f"python {temp_file} {target_device_id}", sh_directory)
+    if temp_process:
+        processes.append(('temp', temp_process))
 
-# 等待所有线程执行完毕
-for thread in threads:
-    thread.join()
-
-
+    return processes
 
 def get_process_info(command):
     # 执行命令
@@ -233,4 +176,46 @@ def devices_action():
     return jsonify({'message': f'设备 {device_id} 已成功设置并开始性能测试', 'tcpPort': tcp_port}), 200
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5200)
+    test_devices = [
+        {
+            'device_id': 'S30PQkRa0500702',
+            'tcp_port': '5555',
+            'package_name': 'com.yangcong345.cloud.ui.launcher',
+            'system_version': '10'
+        }
+    ]
+
+    all_processes = []  # 存储所有设备的进程
+
+    try:
+        # 运行测试设备
+        for device in test_devices:
+            print(f"\n开始设置设备: {device['device_id']}")
+            processes = handle_device_setup(**device)
+            all_processes.extend(processes)
+            
+        print("\n所有监控已启动，按 Ctrl+C 停止...")
+        
+        # 保持主进程运行并监控子进程
+        while True:
+            for name, process in all_processes:
+                if process.poll() is not None:
+                    print(f"{name} 进程已退出，返回码: {process.poll()}")
+                    # 可以在这里重启进程
+            time.sleep(1)
+            
+    except KeyboardInterrupt:
+        print("\n检测到Ctrl+C，正在停止所有监控...")
+        # 停止所有进程
+        for name, process in all_processes:
+            if process.poll() is None:  # 如果进程还在运行
+                print(f"正在停止 {name} 进程...")
+                process.terminate()
+                try:
+                    process.wait(timeout=5)  # 等待进程结束
+                except subprocess.TimeoutExpired:
+                    process.kill()  # 如果进程没有及时结束，强制结束
+    except Exception as e:
+        print(f"发生错误: {e}")
+    finally:
+        print("监控已结束")

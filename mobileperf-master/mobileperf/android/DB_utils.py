@@ -4,7 +4,6 @@ import configparser
 import json
 import datetime
 
-
 class DatabaseOperations:
     # def __init__(self):
     #     self.db_config = {
@@ -46,6 +45,7 @@ class DatabaseOperations:
         except Exception as e:
             print(f"Error connecting to database: {e}")
             return None
+
 
     def devices_details_insert(self, devices_details):
         print("---------------------------------------------------------------------devices_details")
@@ -118,7 +118,7 @@ class DatabaseOperations:
             cur.close()
             conn.close()
 
-    def devices_info_insert(self, device_id, device_name):
+    def devices_info_insert(self, device_id, device_name, system_version, package_name):
         conn = self.connect()
         if not conn:
             return
@@ -127,9 +127,9 @@ class DatabaseOperations:
             # self.sync_sequence(cur)
             print("-------------------------------------------------------------------------------------------devices")
             cur.execute("""
-                        INSERT INTO devices (id, device_id, device_name, created_at, ids)
-                        VALUES (uuid_generate_v4(), %s, %s, CURRENT_TIMESTAMP, uuid_generate_v4())
-                        """, (device_id, device_name))
+                        INSERT INTO devices (id, device_id, device_name, created_at, ids, android_version, package_name)
+                        VALUES (uuid_generate_v4(), %s, %s, CURRENT_TIMESTAMP, uuid_generate_v4(), %s, %s)
+                        """, (device_id, device_name, system_version, package_name))
             conn.commit()
             print("设备数据插入成功！")
         except Exception as e:
@@ -411,7 +411,7 @@ class DatabaseOperations:
                         """, (json.dumps(existing_details), existing_data[0]))  # 传递更新后的 JSON 字符串
 
                 conn.commit()
-                print("FPS data updated successfully.")
+                print("temperature data updated successfully.")
             else:
                 # 如果没有记录，则插入新数据
                 # print(f"Inserting new FPS data for device_ids: {fps_data['device_ids']}")
@@ -479,7 +479,8 @@ class DatabaseOperations:
             cur.execute("SELECT * FROM devices_details;")
             devices = cur.fetchall()
 
-            print("查看所有设备详细信息！"+devices)
+            # 使用 str() 将 devices 转换为字符串，以便拼接
+            #print("查看所有设备详细信息！" + str(devices))
             return devices
         except Exception as e:
             print(f"Failed to fetch devices: {e}")
@@ -652,36 +653,44 @@ class DatabaseOperations:
 
     # 删除指定sn和ids的性能数据
     def delete_device_data(self, sn, ids):
+        print(sn)
+        print(ids)
         conn = self.connect()
         if not conn:
             return None
 
         cur = conn.cursor()
         try:
-            # 删除 cpu_info、fps_info 和 meminfo 表中的相关记录
-            cur.execute("""
-                DELETE FROM cpu_info WHERE device_ids IN (%s);
-            """, (ids,))
+            # Check if records exist in cpu_info table before deletion
+            cur.execute("SELECT COUNT(*) FROM cpu_info WHERE device_ids IN (%s);", (ids,))
+            if cur.fetchone()[0] > 0:
+                cur.execute("DELETE FROM cpu_info WHERE device_ids IN (%s) and device_id IN (%s);", (ids, sn))
+                print("删除 cpu_info 表中的记录")
 
-            cur.execute("""
-                DELETE FROM fps_info WHERE device_ids IN (%s);
-            """, (ids,))
+            # Check if records exist in fps_info table before deletion
+            cur.execute("SELECT COUNT(*) FROM fps_info WHERE device_ids IN (%s);", (ids,))
+            if cur.fetchone()[0] > 0:
+                cur.execute("DELETE FROM fps_info WHERE device_ids IN (%s) and device_id IN (%s);", (ids, sn))
+                print("删除 fps_info 表中的记录")
 
-            cur.execute("""
-                DELETE FROM meminfo WHERE device_ids IN (%s);
-            """, (ids,))
+            # Check if records exist in meminfo table before deletion
+            cur.execute("SELECT COUNT(*) FROM meminfo WHERE device_ids IN (%s);", (ids,))
+            if cur.fetchone()[0] > 0:
+                cur.execute("DELETE FROM meminfo WHERE device_ids IN (%s) and device_id IN (%s);", (ids, sn))
+                print("删除 meminfo 表中的记录")
 
-            # 删除 devices 表中的记录
-            cur.execute("""
-                DELETE FROM devices WHERE ids IN (%s);
-            """, (ids, sn))
+            # Check if records exist in devices table before deletion
+            cur.execute("SELECT COUNT(*) FROM devices WHERE ids IN (%s) and device_id IN (%s);", (ids, sn))
+            if cur.fetchone()[0] > 0:
+                cur.execute("DELETE FROM devices WHERE ids IN (%s) and device_id IN (%s);", (ids, sn))
+                print("删除 devices 表中的记录")
 
-            conn.commit()  # 提交事务
+            conn.commit()  # Commit the transaction
             print("删除相关历史数据！")
 
         except Exception as e:
             print(f"删除失败: {e}")
-            conn.rollback()  # 回滚事务
+            conn.rollback()  # Rollback the transaction if something goes wrong
             return None
 
         finally:
@@ -713,6 +722,15 @@ class DatabaseOperations:
             cur.close()
             conn.close()
 
+    # def temperature_info_insert(self, device_id, battery_temp, cpu_temp):
+    #     """插入温度数据"""
+    #     sql = """
+    #         INSERT INTO temperature_info (device_id, battery_temp, cpu_temp)
+    #         VALUES (%s, %s, %s)
+    #     """
+    #     self.cursor.execute(sql, (device_id, battery_temp, cpu_temp))
+    #     self.conn.commit()
+
 # 测试代码
 # db_operations = DatabaseOperations()
 #
@@ -735,4 +753,9 @@ class DatabaseOperations:
 # # 调用 CPU_info_insert 方法
 # d = db_operations.CPU_info_insert(cpu_data)
 # print(d)
+# db_operations = DatabaseOperations()
+# sn = "S301YJTEST000006"
+# ids = "6123430e-18cc-4884-adc7-125f36a3baa5"
+# db_operations.delete_device_data(sn, ids)
+
 

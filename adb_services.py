@@ -75,7 +75,7 @@ def get_connected_devices():
     return devices
 
 
-def handle_device_setup(device_id, tcp_port):
+def handle_device_setup(device_id, tcp_port, package_name, system_version):
     #print(f"Setting up device: {device_id} on port: {tcp_port}")
     """连接成功后执行设备的设置和性能测试"""
     target_device_id = f'host.docker.internal:{tcp_port}'
@@ -123,19 +123,30 @@ def handle_device_setup(device_id, tcp_port):
     # 插入设备信息到数据库
     db_operations = DatabaseOperations()
     device_name = "未知"
-    if target_device_id.startswith("S30"):
+    if target_device_id.startswith("Q20"):
+        if system_version == "13":
+            device_name = "Q20降本"
+        else:
+            device_name = "Q20"
+    elif target_device_id.startswith("S30"):
         device_name = "S30"
-    elif target_device_id.startswith("Q20"):
-        device_name = "Q20"
+    elif target_device_id.startswith("P30"):
+        device_name = "P30"
+
+        
 
     try:
-        db_operations.devices_info_insert(target_device_id, device_name)
+        db_operations.devices_info_insert(target_device_id, device_name, package_name, system_version)
     except Exception as db_e:
         print(db_e)
         print("devices_info插入数据库失败！！")
 
     # 执行 fps_run.py 文件，并将设备 ID 作为参数传递
-    py_file = os.path.join(base_path, "mobileperf-master", "mobileperf", "android", "fps_run.py")
+    # 执行 fps_run.py 文件，并将设备 ID 作为参数传递
+    if system_version == "13":
+        py_file = os.path.join(base_path, "mobileperf-master", "mobileperf", "android", "fps_run_android13.py")
+    else:
+        py_file = os.path.join(base_path, "mobileperf-master", "mobileperf", "android", "fps_run.py")
     py_file = py_file.replace('\r', '')  # 移除路径中的回车符
     thread_py = threading.Thread(target=run_command_in_directory, args=(f"python {py_file} {target_device_id}", sh_directory))
     threads.append(thread_py)
@@ -224,7 +235,7 @@ def get_process_info(tcp_port):
     # 将 tcp_port 转换为字符串
     tcp_port_str = str(tcp_port)
 
-    # 执行命令列出匹配“startup”的进程
+    # 执行命令列出匹配"startup"的进程
     procStr = subprocess.run(f'ps aux | grep "[s]tartup"', shell=True, capture_output=True, text=True)
 
     # 解析每一行数据
@@ -310,9 +321,11 @@ def start_monkey():
     data = request.json
     device_id = data.get('deviceId')
     tcp_port = data.get('tcpPort')
-
+    package_name = data.get('package_name')
+    system_version = data.get('android_version')
+    
     if device_id and tcp_port:
-        print(f"接收到设备: {device_id}，端口: {tcp_port}")
+        print(f"接收到设备: {device_id}，端口: {tcp_port}, Android系统: {system_version}")
 
         if device_id in connected_devices:
             return jsonify({"message": "设备已连接"}), 200
@@ -325,11 +338,11 @@ def start_monkey():
             # connect_command = f'adb connect {device_id}'
             # result = subprocess.run(connect_command, shell=True, capture_output=True, text=True)
 
-            logging.info(f"成功连接设备 {device_id}，端口: {tcp_port}")
+            logging.info(f"成功连接设备 {device_id}，端口: {tcp_port}, Android系统: {system_version}")
             time.sleep(2)
 
             #handle_device_setup(device_id, tcp_port)
-            devices_action.handle_device_setup(device_id, tcp_port, "com.yangcong345.eye.protection")
+            devices_action.handle_device_setup(device_id, tcp_port, package_name, system_version)
 
             # 返回成功的响应
             return jsonify({"status": "success", "message": "设备开始执行monkey脚本"}), 200

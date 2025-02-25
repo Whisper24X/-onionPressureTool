@@ -85,6 +85,7 @@ watch(
       const data = {
         device_name: name,
         other_field: field,
+        
 
         // device_name: 'S301YJTEST000006',
         // other_field: 'bb4ebaca-ae4d-41f8-8178-2956a06366a8',

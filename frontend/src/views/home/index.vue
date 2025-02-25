@@ -125,6 +125,7 @@ const start = (item) => {
     deviceId: item.device_id,
     tcpPort: item.tcp_port,
     package_name: item.selectedPackage,
+    android_version: item.android_version
   })
     .then(() => {
       ElMessage.success('操作成功')
@@ -231,7 +232,7 @@ const del = (row) => {
 onMounted(() => {
   getDeviceList()
   getHistroyList()
-  // startTimer()
+  startTimer()
 })
 </script>
 

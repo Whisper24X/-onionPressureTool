@@ -1,4 +1,4 @@
-from fpslis import IFpsListener
+from fpslis_android13 import IFpsListener_android13
 from datetime import datetime
 import csv
 import os
@@ -11,7 +11,7 @@ def get_config_value(file_path, key):
             if line.strip().startswith(key):
                 return line.split('=')[1].strip()
     return None
-class FpsListenserImpl(IFpsListener):
+class FpsListenserImpl(IFpsListener_android13):
     def __init__(self):
         self.package = get_config_value("config.conf", "package")
 

@@ -192,7 +192,9 @@ class FpsCollector(object):
                 fps_info = FpsInfo(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(refresh_time)), len(timestamps),
                                    fps,
                                    self.package_name, self.focus_window, jank_list, len(jank_list), caton)
-                self.listener.report_fps_info(fps_info, self.device, self.package_name)
+                #self.listener.report_fps_info(fps_info, self.device, self.package_name)
+                self.listener.report_fps_info(fps_info, self.device)
+
                 # print('\n')
                 # print("当前设备是：" + self.device)
                 # print("当前进程是：" + self.package_name)

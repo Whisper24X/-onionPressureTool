@@ -1,0 +1,29 @@
+# Python 基础依赖
+tkinter>=8.6  # GUI 界面
+subprocess  # 执行系统命令
+threading  # 多线程支持
+logging  # 日志记录
+datetime  # 时间处理
+os  # 文件系统操作
+sys  # 系统相关
+time  # 时间操作
+random  # 随机数生成
+re  # 正则表达式
+
+# 系统工具依赖
+adb  # Android Debug Bridge
+aapt  # Android Asset Packaging Tool
+aapt2  # Android Asset Packaging Tool 2
+
+# 使用说明：
+# 1. Python 依赖已内置在 Python 3.x 中，无需额外安装
+# 2. 系统工具需要单独安装：
+#    - adb: 通过 Android SDK Platform Tools 安装
+#    - aapt/aapt2: 通过 Android SDK Build Tools 安装
+
+# 安装步骤：
+# 1. 确保已安装 Python 3.x
+# 2. 下载并安装 Android SDK Platform Tools
+# 3. 将 adb 添加到系统环境变量
+# 4. 下载并安装 Android SDK Build Tools
+# 5. 将 aapt/aapt2 添加到系统环境变量 

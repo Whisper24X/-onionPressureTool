@@ -20,32 +20,21 @@ services:
       - perf  # 使用 perf 网络
 
   frontend:
-    image: nginx:1.21.3
+    build:
+      context: ./frontend  # 指定前端项目目录
+      dockerfile: Dockerfile
+      args:
+        - BUILD_DATE=${BUILD_DATE:-$(date +%Y%m%d_%H%M%S)}  # 添加构建参数
     container_name: frontend
-    # 数据卷挂载路径设置,将本机目录映射到容器目录
     volumes:
       - "./docker/nginx/conf.d/:/etc/nginx/conf.d/"
       - "./frontend/dist/:/usr/share/nginx/html/"
-      - "./frontend:/app"  # 将主机的代码目录映射到容器
-      #- "/app/node_modules"  # 避免 node_modules 被主机代码覆盖
-    #command: ["npm", "run", "serve"]  # 启动开发服务器
-    # 映射端口
     ports:
       - "8000:80"
     networks:
       - perf
-#  frontend:
-#    build:
-#      context: .
-#      dockerfile: Dockerfile
-#    container_name: frontend
-#    ports:
-#      - "8000:80"
-#    networks:
-#      - perf
-#    volumes:
-#      - ./frontend/app:/app
-#      - ./docker/nginx/conf.d:/etc/nginx/conf.d
+    depends_on:
+      - postgresql
 
   backend:
     build:
